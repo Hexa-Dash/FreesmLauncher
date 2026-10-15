@@ -24,11 +24,16 @@ jobs:
           usesh: true
           sync: rsync
           copyback: true
+          mem: 4096
+          debug: true
           prepare: |
             pkg install -y cmake ninja git bash openjdk21 qt6-base qt6-svg \
-              qt6-networkauth qt6-base-tools extra-cmake-modules \
+              qt6-networkauth qt6-tools kf6-extra-cmake-modules \
               tomlplusplus libarchive cmark libqrencode vulkan-headers \
-              libglvnd pkgconf
+              libglvnd pkgconf rsync
+            echo "127.0.0.1 freebsd" >> /etc/hosts
+            sysrc sshd_enable="YES"
+            service sshd start
 
           run: |
             set -e
