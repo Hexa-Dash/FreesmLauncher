@@ -1,0 +1,66 @@
+name: Build FreesmLauncher for FreeBSD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-freebsd:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Build on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: '14.2'
+          usesh: true
+          sync: rsync
+          copyback: true
+          prepare: |
+            pkg install -y cmake ninja git bash openjdk21 qt6-base qt6-svg \
+              qt6-networkauth qt6-base-tools extra-cmake-modules \
+              tomlplusplus libarchive cmark libqrencode vulkan-headers \
+              libglvnd pkgconf
+
+          run: |
+            set -e
+            echo "===== System Info ====="
+            freebsd-version
+            uname -a
+            sysctl -n hw.ncpu
+
+            echo "===== Configure CMake ====="
+            mkdir -p build
+            cd build
+            cmake .. \
+              -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX="/usr/local" \
+              -DLauncher_BUILD_PLATFORM=FreeBSD \
+              -DLauncher_QT_VERSION_MAJOR=6 \
+              -DENABLE_LTO=ON \
+              -DLauncher_USE_PCH=ON
+
+            echo "===== Build ====="
+            ninja -j$(sysctl -n hw.ncpu)
+
+            echo "===== Create Package ====="
+            mkdir -p /tmp/package
+            DESTDIR=/tmp/package ninja install
+            cd /tmp
+            tar -czf FreeBSD-x86_64-FreesmLauncher.tar.gz package
+            echo "Package created: $(ls -lh FreeBSD-x86_64-FreesmLauncher.tar.gz)"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FreesmLauncher-FreeBSD
+          path: FreeBSD-x86_64-FreesmLauncher.tar.gz
