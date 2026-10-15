@@ -10,6 +10,7 @@ on:
 jobs:
   build-freebsd:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
@@ -22,18 +23,33 @@ jobs:
         with:
           release: '14.2'
           usesh: true
-          sync: rsync
+          sync: sshfs          # <-- تغییر از rsync به sshfs
           copyback: true
-          mem: 4096
+          mem: 8192            # <-- افزایش حافظه
           debug: true
           prepare: |
-            pkg install -y cmake ninja git bash openjdk21 qt6-base qt6-svg \
-              qt6-networkauth qt6-tools kf6-extra-cmake-modules \
-              tomlplusplus libarchive cmark libqrencode vulkan-headers \
-              libglvnd pkgconf rsync
+            set -x
+            echo "===== Updating package repo ====="
+            pkg update -f
+
+            echo "===== Installing build tools ====="
+            pkg install -y cmake ninja git bash pkgconf rsync
+
+            echo "===== Installing Java ====="
+            pkg install -y openjdk21
+
+            echo "===== Installing Qt6 & KDE deps ====="
+            pkg install -y qt6-base qt6-svg qt6-networkauth qt6-tools kf6-extra-cmake-modules
+
+            echo "===== Installing libraries ====="
+            pkg install -y tomlplusplus libarchive cmark libqrencode vulkan-headers libglvnd
+
+            echo "===== Configuring SSH ====="
             echo "127.0.0.1 freebsd" >> /etc/hosts
             sysrc sshd_enable="YES"
-            service sshd start
+            service sshd restart
+            sleep 5
+            service sshd status || true
 
           run: |
             set -e
