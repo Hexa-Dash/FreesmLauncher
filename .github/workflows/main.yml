@@ -10,7 +10,7 @@ on:
 jobs:
   build-freebsd:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - name: Checkout repository
@@ -23,9 +23,9 @@ jobs:
         with:
           release: '14.2'
           usesh: true
-          sync: sshfs          # <-- تغییر از rsync به sshfs
+          sync: sshfs
           copyback: true
-          mem: 8192            # <-- افزایش حافظه
+          mem: 8192
           debug: true
           prepare: |
             set -x
@@ -39,7 +39,7 @@ jobs:
             pkg install -y openjdk21
 
             echo "===== Installing Qt6 & KDE deps ====="
-            pkg install -y qt6-base qt6-svg qt6-networkauth qt6-tools kf6-extra-cmake-modules
+            pkg install -y qt6-base qt6-svg qt6-networkauth kf6-extra-cmake-modules
 
             echo "===== Installing libraries ====="
             pkg install -y tomlplusplus libarchive cmark libqrencode vulkan-headers libglvnd
